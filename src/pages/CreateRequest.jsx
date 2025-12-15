@@ -5,14 +5,22 @@ export default function CreateRequest() {
   return (
     <Box
       sx={{
+        width: "100%",
         maxWidth: 1200,
         mx: "auto",
-        px: { xs: 2.5, sm: 4, md: 6 },
-        py: { xs: 5, md: 7 },
+        px: { xs: 2, sm: 4, md: 6 },
+        py: { xs: 4, md: 6 },
       }}
     >
       <Card className="shadow-sm" sx={{ borderRadius: 3, overflow: "hidden" }}>
-        <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 }, display: "grid", gap: 3, overflow: "visible" }}>
+        <CardContent
+          sx={{
+            p: { xs: 3, sm: 4, md: 5 },
+            display: "grid",
+            gap: { xs: 2.5, md: 3 },
+            overflow: "visible",
+          }}
+        >
           <Typography variant="h5" fontWeight={700}>
             Create a new data request
           </Typography>

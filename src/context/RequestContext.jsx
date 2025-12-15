@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const RequestContext = createContext(null);
 
@@ -35,8 +35,27 @@ const sampleRequests = [
   },
 ];
 
+const STORAGE_KEY = "data-exchange-requests";
+
 export function RequestProvider({ children }) {
-  const [requests, setRequests] = useState(sampleRequests);
+  const [requests, setRequests] = useState(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return sampleRequests;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : sampleRequests;
+    } catch {
+      return sampleRequests;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+    } catch {
+      // ignore persistence errors
+    }
+  }, [requests]);
 
   const addRequest = (payload) => {
     const newRequest = {

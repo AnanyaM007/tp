@@ -1,25 +1,13 @@
 import { useMemo, useRef, useState } from "react";
-import {
-  Box,
-  Button,
-  Chip,
-  FormControlLabel,
-  IconButton,
-  InputAdornment,
-  MenuItem,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ExcelSheet from "./ExcelSheet";
 import { Link, useNavigate } from "react-router-dom";
 import { useRequests } from "../context/RequestContext";
 import { sendRequestEmails } from "../services/emailService";
+
+const APP_BASE_URL = import.meta.env.VITE_APP_BASE_URL || window.location.origin;
 
 const DEFAULT_EMAIL_BODY = [
   "Hi team,",
@@ -51,10 +39,11 @@ export default function RequestForm() {
   const [deadline, setDeadline] = useState("");
   const [reminderOn, setReminderOn] = useState(true);
   const [frequency, setFrequency] = useState("weekly");
-  const [columns, setColumns] = useState(["Field 1", "Field 2"]);
+  const [columns] = useState(["Field 1", "Field 2"]);
   const [instructions, setInstructions] = useState("");
   const [templateContent, setTemplateContent] = useState("");
-  const [emailSubject, setEmailSubject] = useState("Data request: {{title}}");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [hasEditedSubject, setHasEditedSubject] = useState(false);
   const [emailBody, setEmailBody] = useState(DEFAULT_EMAIL_BODY);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,10 +88,15 @@ export default function RequestForm() {
     setIsSubmitting(true);
     let id = "";
     try {
+      const inlineEmail = emailInputRef.current?.value?.trim() || "";
+      const finalEmails = inlineEmail
+        ? [...new Set([...emails, inlineEmail])]
+        : emails;
+
       id = addRequest({
         title,
         departments,
-        emails,
+        emails: finalEmails,
         format,
         deadline,
         reminders: { enabled: reminderOn, frequency },
@@ -113,12 +107,12 @@ export default function RequestForm() {
         emailBody,
       });
 
-      const link = `${window.location.origin}/request/${id}`;
+      const link = `${APP_BASE_URL.replace(/\/$/, "")}/request/${id}`;
       const hydratedSubject = hydrateTemplate(emailSubject, link);
       const hydratedBody = hydrateTemplate(emailBody, link);
 
       const emailResult = await sendRequestEmails({
-        emails,
+        emails: finalEmails,
         title,
         deadline,
         link,
@@ -150,17 +144,17 @@ export default function RequestForm() {
         display: "flex",
         flexDirection: "column",
         mx: "auto",
-        px: { xs: 1.5, sm: 2, md: 1.5 }
+        width: "100%",
+        maxWidth: 1100,
+        px: { xs: 0, sm: 0, md: 0 },
       }}
     >
-      <form onSubmit={handleSubmit} style={{ width: "100%",}}>
-        <Stack spacing={{ xs: 3, md: 4 }} sx={{ pb: 16 }}>
+      <form onSubmit={handleSubmit} style={{ width: "95%" }}>
+        <Stack spacing={{ xs: 3.25, md: 4.25 }} sx={{ pb: 14 }}>
         <Grid
           container
-          rowSpacing={{ xs: 2, sm: 2.5, md: 3 }}
-          columnSpacing={{ xs: 1.5, sm: 2, md: 3 }}
-          sx={{ pb: 1 , display: "flex",
-            flexDirection: "column"}}
+          rowSpacing={{ xs: 2.25, sm: 2.5, md: 3 }}
+          columnSpacing={{ xs: 2, sm: 2.5, md: 3 }}
         >
         <Grid item xs={12} md={6}>
           <TextField
@@ -168,7 +162,13 @@ export default function RequestForm() {
             fullWidth
             label="Data needed (name)"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const newTitle = e.target.value;
+              setTitle(newTitle);
+              if (!hasEditedSubject) {
+                setEmailSubject(newTitle);
+              }
+            }}
           />
         </Grid>
         <Grid item xs={12} md={6}>
@@ -185,7 +185,7 @@ export default function RequestForm() {
           <TextField
             fullWidth
             inputRef={deptInputRef}
-            label="Division / department (press Enter to add)"
+            label="Division / department"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -207,7 +207,7 @@ export default function RequestForm() {
           </Stack>
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField
+          {/* <TextField
             fullWidth
             inputRef={emailInputRef}
             label="Recipient emails (press Enter to add)"
@@ -218,7 +218,7 @@ export default function RequestForm() {
                 e.currentTarget.value = "";
               }
             }}
-          />
+          /> */}
           <Stack direction="row" spacing={1} flexWrap="wrap" mt={1.25} rowGap={1}>
             {emails.map((mail) => (
               <Chip
@@ -275,16 +275,20 @@ export default function RequestForm() {
         minRows={3}
         value={instructions}
         onChange={(e) => setInstructions(e.target.value)}
+        sx={{ mt: { xs: 0.5, md: 1 } }}
       />
 
-      <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }}>
+      <Grid container spacing={{ xs: 2.25, sm: 2.5, md: 3 }}>
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             label="Email subject"
             value={emailSubject}
-            onChange={(e) => setEmailSubject(e.target.value)}
-            helperText="You can use {{title}} placeholder."
+            onChange={(e) => {
+              setHasEditedSubject(true);
+              setEmailSubject(e.target.value);
+            }}
+            helperText="Defaults to the data request name, but you can customise it."
           />
         </Grid>
         <Grid item xs={12} md={6}>
@@ -292,7 +296,14 @@ export default function RequestForm() {
             fullWidth
             label="Mail recipients"
             value={emails.join(", ")}
-            onChange={(e) => setEmails(e.target.value.split(",").map((m) => m.trim()).filter(Boolean))}
+            onChange={(e) =>
+              setEmails(
+                e.target.value
+                  .split(",")
+                  .map((m) => m.trim())
+                  .filter(Boolean)
+              )
+            }
             helperText="Edit recipients inline or use the chip input above."
           />
         </Grid>
@@ -311,8 +322,9 @@ export default function RequestForm() {
 
         {format === "Excel" && (
           <Box
-            className="border border-dashed border-slate-400 rounded-lg p-5 space-y-3"
+            className="border border-dashed border-slate-400 rounded-lg space-y-3"
             sx={{
+              p: { xs: 2.5, sm: 3 },
               overflowX: "auto",
               overflowY: "hidden",
             }}
@@ -320,31 +332,6 @@ export default function RequestForm() {
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
               <Typography fontWeight={700}>Excel template</Typography>
               <Typography color="text.secondary">Define columns to auto-build the sheet.</Typography>
-            </Stack>
-            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" rowGap={1.25}>
-              {columns.map((col, idx) => (
-                <TextField
-                  key={idx}
-                  size="small"
-                  value={col}
-                  sx={{ minWidth: { xs: 140, sm: 160, md: 180 } }}
-                  onChange={(e) =>
-                    setColumns((prev) => prev.map((c, i) => (i === idx ? e.target.value : c)))
-                  }
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => setColumns((prev) => prev.filter((_, i) => i !== idx))}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              ))}
-              <IconButton color="primary" onClick={() => setColumns((prev) => [...prev, `Field ${prev.length + 1}`])}>
-                <AddIcon />
-              </IconButton>
             </Stack>
             <Box sx={{ minWidth: { xs: 640, sm: 720, md: 900 } }}>
               <ExcelSheet columns={columns} />
@@ -398,8 +385,6 @@ export default function RequestForm() {
             pt: 3,
             mt: 2,
             backgroundColor: "#fff",
-            borderTop: "1px solid #e5e7eb",
-            boxShadow: "0 -6px 18px rgba(0,0,0,0.05)",
             zIndex: 3,
           }}
         >

@@ -1,4 +1,4 @@
-import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Button, Toolbar, Typography, Stack } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
 
 const links = [
@@ -9,6 +9,8 @@ const links = [
 export default function Navbar() {
   const { pathname } = useLocation();
 
+  const visibleLinks = links.filter((link) => link.to !== pathname);
+
   return (
     <AppBar position="sticky" elevation={0} color="inherit">
       <Toolbar className="bg-white border-b border-slate-100">
@@ -16,19 +18,24 @@ export default function Navbar() {
           TATA Power | Data Exchange
         </Typography>
         <Box sx={{ flex: 1 }} />
-        <Box className="flex gap-2">
-          {links.map((link) => (
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1.5}
+          sx={{ alignItems: { xs: "stretch", sm: "center" } }}
+        >
+          {visibleLinks.map((link) => (
             <Button
               key={link.to}
               component={Link}
               to={link.to}
-              variant={pathname === link.to ? "contained" : "text"}
+              variant="text"
               color="primary"
+              sx={{ minWidth: 120 }}
             >
               {link.label}
             </Button>
           ))}
-        </Box>
+        </Stack>
       </Toolbar>
     </AppBar>
   );

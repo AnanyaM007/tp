@@ -28,12 +28,16 @@ export default function Dashboard() {
       sx={{
         maxWidth: 1200,
         mx: "auto",
-        px: { xs: 3, sm: 4, md: 6 },
-        py: { xs: 6, md: 8 },
+        px: { xs: 2, sm: 4, md: 6 },
+        py: { xs: 5, md: 7 },
       }}
-      className="space-y-7"
     >
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        spacing={{ xs: 2.5, md: 3 }}
+        alignItems={{ xs: "flex-start", md: "center" }}
+        sx={{ mb: { xs: 3.5, md: 4.5 } }}
+      >
         <Box>
           <Typography variant="h4" fontWeight={700}>
             Data request workspace
@@ -43,20 +47,21 @@ export default function Dashboard() {
           </Typography>
         </Box>
         <Box sx={{ flex: 1 }} />
-        <Button component={Link} to="/request/new" variant="contained">
-          New request
-        </Button>
       </Stack>
 
-      <Grid container spacing={{ xs: 2.5, md: 3 }}>
+      <Grid
+        container
+        spacing={{ xs: 2.5, md: 3 }}
+        sx={{ mb: { xs: 3.5, md: 4.5 } }}
+      >
         {[
           { label: "Open requests", value: pending, color: "primary" },
           { label: "Completed", value: completed, color: "secondary" },
           { label: "Auto-reminders active", value: withReminders, color: "info" },
         ].map((item) => (
           <Grid key={item.label} item xs={12} md={4}>
-            <Card className="shadow-sm">
-              <CardContent>
+            <Card className="shadow-sm" sx={{ borderRadius: 3 }}>
+              <CardContent sx={{ px: 3, py: 2.75 }}>
                 <Typography color="text.secondary">{item.label}</Typography>
                 <Typography variant="h4" fontWeight={700}>
                   {item.value}
@@ -67,8 +72,11 @@ export default function Dashboard() {
         ))}
       </Grid>
 
-      <Card className="shadow-sm">
-        <CardContent>
+      <Card
+        className="shadow-sm"
+        sx={{ borderRadius: 3 }}
+      >
+        <CardContent sx={{ px: { xs: 3, sm: 4 }, py: { xs: 3, sm: 3.5 } }}>
           <Stack
             direction={{ xs: "column", md: "row" }}
             alignItems={{ xs: "flex-start", md: "center" }}
