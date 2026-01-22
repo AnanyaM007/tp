@@ -1,95 +1,97 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { api } from "../services/api";
 
 const RequestContext = createContext(null);
 
-const sampleRequests = [
-  {
-    id: "REQ-001",
-    title: "Meter inventory - South Zone",
-    format: "Excel",
-    departments: ["Distribution", "Maintenance"],
-    emails: ["dist@tatapower.com", "maint@tatapower.com"],
-    deadline: "2025-01-15",
-    emailSubject: "Data request: Meter inventory - South Zone",
-    emailBody:
-      "Hi team,\n\nPlease update the sheet for Meter inventory - South Zone.\nDeadline: 2025-01-15\nLink: {{link}}\n\nThanks,\nData Office",
-    reminders: { enabled: true, frequency: "weekly" },
-    instructions: "Share all active meters with health status.",
-    columns: ["Asset ID", "Location", "Status", "Remarks"],
-    submissions: [
-      {
-        department: "Distribution",
-        rows: [
-          { "Asset ID": "MTR-001", Location: "Mumbai", Status: "Active", Remarks: "" },
-          { "Asset ID": "MTR-002", Location: "Pune", Status: "Inactive", Remarks: "Under repair" },
-        ],
-        completed: true,
-      },
-      {
-        department: "Maintenance",
-        rows: [{ "Asset ID": "MTR-003", Location: "Navi Mumbai", Status: "Active", Remarks: "" }],
-        completed: false,
-      },
-    ],
-    status: "In Progress",
-  },
-];
-
-const STORAGE_KEY = "data-exchange-requests";
-
 export function RequestProvider({ children }) {
-  const [requests, setRequests] = useState(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return sampleRequests;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : sampleRequests;
-    } catch {
-      return sampleRequests;
-    }
-  });
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Fetch requests from backend on mount
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
-    } catch {
-      // ignore persistence errors
+    async function loadRequests() {
+      try {
+        setLoading(true);
+        const data = await api.getAllRequests();
+        setRequests(data);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to load requests:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [requests]);
+    loadRequests();
+  }, []);
 
-  const addRequest = (payload) => {
-    const newRequest = {
-      ...payload,
-      id: `REQ-${(requests.length + 1).toString().padStart(3, "0")}`,
-      submissions: [],
-      status: "In Progress",
-    };
-    setRequests((prev) => [...prev, newRequest]);
-    return newRequest.id;
+  const addRequest = async (payload) => {
+    try {
+      // The ID generation here is client-side, but the backend should ideally assign the final ID.
+      // For this example, we'll keep the client-side ID generation for consistency with the original structure
+      // before sending to the API, assuming the API might return a more robust ID.
+      // If the backend assigns the ID, this `id` property might be removed from the payload sent to `createRequest`.
+      const newRequest = {
+        ...payload,
+        id: `REQ-${(requests.length + 1).toString().padStart(3, "0")}`,
+        submissions: [], // Assuming these are initialized by the backend or default
+        status: "In Progress", // Assuming this is initialized by the backend or default
+      };
+      const created = await api.createRequest(newRequest);
+      setRequests((prev) => [...prev, created]);
+      return created.id;
+    } catch (err) {
+      console.error('Failed to create request:', err);
+      throw err;
+    }
   };
 
-  const addSubmission = (requestId, submission) => {
-    setRequests((prev) =>
-      prev.map((req) =>
-        req.id === requestId
-          ? { ...req, submissions: [...req.submissions, submission] }
-          : req
-      )
-    );
+  const addSubmission = async (requestId, submission) => {
+    try {
+      const updated = await api.addSubmission(requestId, submission);
+      setRequests((prev) =>
+        prev.map((req) => (req.id === requestId ? updated : req))
+      );
+    } catch (err) {
+      console.error('Failed to add submission:', err);
+      throw err;
+    }
   };
 
-  const markCompleted = (requestId) => {
-    setRequests((prev) =>
-      prev.map((req) =>
-        req.id === requestId ? { ...req, status: "Completed" } : req
-      )
-    );
+  const markCompleted = async (requestId) => {
+    try {
+      const updated = await api.updateRequestStatus(requestId, "Completed");
+      setRequests((prev) =>
+        prev.map((req) => (req.id === requestId ? updated : req))
+      );
+    } catch (err) {
+      console.error('Failed to mark as completed:', err);
+      throw err;
+    }
   };
 
-  const value = useMemo(
-    () => ({ requests, addRequest, addSubmission, markCompleted }),
-    [requests]
-  );
+  const updateRequest = async (requestId, updates) => {
+    try {
+      const updated = await api.updateRequest(requestId, updates);
+      setRequests((prev) =>
+        prev.map((req) => (req.id === requestId ? updated : req))
+      );
+    } catch (err) {
+      console.error('Failed to update request:', err);
+      throw err;
+    }
+  };
+
+  const value = {
+    requests,
+    addRequest,
+    addSubmission,
+    markCompleted,
+    updateRequest,
+    loading,
+    error,
+  };
 
   return <RequestContext.Provider value={value}>{children}</RequestContext.Provider>;
 }
