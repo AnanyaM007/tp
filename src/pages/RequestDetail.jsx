@@ -35,7 +35,7 @@ export default function RequestDetail() {
   useEffect(() => {
     async function loadRequest() {
       if (!id) return;
-      
+
       // First, try to find in context
       const contextRequest = requests.find((r) => r.id === id);
       if (contextRequest) {
@@ -87,6 +87,14 @@ export default function RequestDetail() {
     }
   }, [combinedRows]);
 
+  // Handle toast message from navigation state - MUST be before early returns
+  useEffect(() => {
+    if (location.state?.requestCreatedMessage) {
+      setToastMessage(location.state.requestCreatedMessage);
+      setShowToast(true);
+    }
+  }, [location.state]);
+
   if (loading || requestLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -120,13 +128,6 @@ export default function RequestDetail() {
     setDepartment("");
     setComment("");
   };
-
-  useEffect(() => {
-    if (location.state?.requestCreatedMessage) {
-      setToastMessage(location.state.requestCreatedMessage);
-      setShowToast(true);
-    }
-  }, [location.state]);
 
   return (
     <Box
