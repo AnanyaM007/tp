@@ -28,13 +28,20 @@ export function RequestProvider({ children }) {
 
   const addRequest = async (payload) => {
     try {
-      // The ID generation here is client-side, but the backend should ideally assign the final ID.
-      // For this example, we'll keep the client-side ID generation for consistency with the original structure
-      // before sending to the API, assuming the API might return a more robust ID.
-      // If the backend assigns the ID, this `id` property might be removed from the payload sent to `createRequest`.
+      // Generate ID based on the maximum existing ID number, not array length
+      // This prevents duplicates when requests are deleted or IDs are non-sequential
+      let maxIdNumber = 0;
+      requests.forEach((req) => {
+        const match = req.id?.match(/^REQ-(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxIdNumber) maxIdNumber = num;
+        }
+      });
+
       const newRequest = {
         ...payload,
-        id: `REQ-${(requests.length + 1).toString().padStart(3, "0")}`,
+        id: `REQ-${(maxIdNumber + 1).toString().padStart(3, "0")}`,
         submissions: [], // Assuming these are initialized by the backend or default
         status: "In Progress", // Assuming this is initialized by the backend or default
       };
