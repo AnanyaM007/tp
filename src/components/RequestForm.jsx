@@ -60,6 +60,7 @@ export default function RequestForm() {
   const [hasEditedSubject, setHasEditedSubject] = useState(false);
   const [emailBody, setEmailBody] = useState(DEFAULT_EMAIL_BODY);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [initialRows, setInitialRows] = useState([]);
 
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -103,6 +104,7 @@ export default function RequestForm() {
         deadline,
         reminders: { enabled: reminderOn, frequency },
         columns,
+        initialRows,
         instructions,
         templateContent,
         emailSubject,
@@ -331,7 +333,8 @@ export default function RequestForm() {
               <DynamicTable
                 columns={columns}
                 onColumnsChange={setColumns}
-                data={[]}
+                data={initialRows}
+                onDataChange={setInitialRows}
                 height={300}
                 editable={true}
                 allowColumnManagement={true}

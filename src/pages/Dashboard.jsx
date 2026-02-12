@@ -82,23 +82,38 @@ export default function Dashboard() {
                 <Divider sx={{ mb: 2, borderColor: '#e2e8f0' }} />
 
                 {/* Table Header */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, bgcolor: '#64748b', color: 'white', p: 1, borderRadius: '4px 4px 0 0' }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 1, bgcolor: '#64748b', color: 'white', p: 1, borderRadius: '4px 4px 0 0' }}>
                   <Typography variant="caption" fontWeight={600}>Name</Typography>
-                  <Typography variant="caption" fontWeight={600} align="center">No. of Instruments</Typography>
+                  <Typography variant="caption" fontWeight={600} align="center">Entries</Typography>
                   <Typography variant="caption" fontWeight={600}>Status</Typography>
                 </Box>
                 {/* Table Rows */}
                 <Box sx={{ border: '1px solid #e2e8f0', borderTop: 0 }}>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, p: 1, borderBottom: '1px solid #f1f5f9' }}>
-                    <Typography variant="caption" fontWeight={500}>Plant A</Typography>
-                    <Typography variant="caption" align="center">15</Typography>
-                    <Typography variant="caption" color="success.main" fontWeight={500}>Operational</Typography>
-                  </Box>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, p: 1 }}>
-                    <Typography variant="caption" fontWeight={500}>Plant B</Typography>
-                    <Typography variant="caption" align="center">10</Typography>
-                    <Typography variant="caption" color="warning.main" fontWeight={500}>Under Maintenance</Typography>
-                  </Box>
+                  {requests.length > 0 ? (
+                    requests.slice(0, 5).map((req) => {
+                      const rowCount = (req.initialRows?.length || 0) +
+                        (req.submissions?.reduce((acc, s) => acc + (s.rows?.length || 0), 0) || 0);
+
+                      return (
+                        <Box key={req.id} sx={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 1, p: 1, borderBottom: '1px solid #f1f5f9' }}>
+                          <Typography variant="caption" fontWeight={500} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {req.title}
+                          </Typography>
+                          <Typography variant="caption" align="center">{rowCount}</Typography>
+                          <Typography variant="caption"
+                            color={req.status === "Completed" ? "success.main" : "warning.main"}
+                            fontWeight={500}
+                          >
+                            {req.status}
+                          </Typography>
+                        </Box>
+                      );
+                    })
+                  ) : (
+                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">No data available</Typography>
+                    </Box>
+                  )}
                 </Box>
 
               </CardContent>

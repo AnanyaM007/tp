@@ -75,9 +75,18 @@ export default function RequestDetail() {
 
   const combinedRows = useMemo(() => {
     if (!request) return [];
-    return request.submissions.flatMap((s) =>
+
+    // Start with non-empty initialRows (if any)
+    const initial = (request.initialRows || []).filter(row =>
+      Object.values(row).some(val => val !== "" && val !== null && val !== undefined)
+    ).map(row => ({ ...row, __department: "Template/Initial" }));
+
+    // Add submission rows
+    const subm = (request.submissions || []).flatMap((s) =>
       s.rows.map((row) => ({ ...row, __department: s.department }))
     );
+
+    return [...initial, ...subm];
   }, [request]);
 
   // Initialize table data from combined rows
@@ -116,6 +125,45 @@ export default function RequestDetail() {
 
   const handleQuickComplete = () => {
     markCompleted(request.id);
+  };
+
+  const handleSaveData = async () => {
+    try {
+      // Split the tableData back into initialRows and submissions
+      const newInitialRows = tableData
+        .filter(row => row.__department === "Template/Initial")
+        .map(({ __department, ...rest }) => rest);
+
+      // Reconstruct submissions by grouping remaining rows by department
+      const deptMap = new Map();
+      tableData
+        .filter(row => row.__department !== "Template/Initial")
+        .forEach(row => {
+          const { __department, ...rowData } = row;
+          if (!deptMap.has(__department)) {
+            deptMap.set(__department, []);
+          }
+          deptMap.get(__department).push(rowData);
+        });
+
+      // Update existing submissions with new row data
+      const newSubmissions = request.submissions.map(sub => ({
+        ...sub,
+        rows: deptMap.get(sub.department) || []
+      }));
+
+      await updateRequest(request.id, {
+        initialRows: newInitialRows,
+        submissions: newSubmissions
+      });
+
+      setToastMessage("Changes saved successfully!");
+      setShowToast(true);
+    } catch (error) {
+      console.error("Failed to save data:", error);
+      setToastMessage("Failed to save changes.");
+      setShowToast(true);
+    }
   };
 
   const handleMockSubmit = () => {
@@ -246,9 +294,21 @@ export default function RequestDetail() {
         <CardContent sx={{ p: 3 }}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "flex-start", sm: "center" }} sx={{ mb: 3 }}>
             <Typography variant="h6" fontWeight={700}>📊 Combined Data Sheet (Live)</Typography>
-            <Typography color="text.secondary" variant="body2">
+            <Typography color="text.secondary" variant="body2" sx={{ flexGrow: 1 }}>
               Auto-updated as departments submit their data
             </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleSaveData}
+              sx={{
+                bgcolor: '#0f4c81',
+                textTransform: 'none',
+                px: 3
+              }}
+            >
+              Save Changes
+            </Button>
           </Stack>
           <DynamicTable
             columns={request.columns || []}

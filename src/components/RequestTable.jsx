@@ -31,6 +31,8 @@ export default function RequestTable({ requests }) {
                 <TableHead sx={{ bgcolor: "#f9fafb" }}>
                     <TableRow>
                         <TableCell sx={{ fontWeight: 600, color: "#4b5563" }}>Request Name</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: "#4b5563" }}>Columns</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: "#4b5563" }}>Entries</TableCell>
                         <TableCell sx={{ fontWeight: 600, color: "#4b5563" }}>Status</TableCell>
                         <TableCell sx={{ fontWeight: 600, color: "#4b5563" }}>Due Date</TableCell>
                         <TableCell sx={{ fontWeight: 600, color: "#4b5563" }}>Actions</TableCell>
@@ -39,6 +41,9 @@ export default function RequestTable({ requests }) {
                 <TableBody>
                     {requests.map((row) => {
                         const statusStyle = STATUS_COLORS[row.status] || STATUS_COLORS["Pending"];
+                        const entryCount = (row.initialRows?.length || 0) +
+                            (row.submissions?.reduce((acc, s) => acc + (s.rows?.length || 0), 0) || 0);
+
                         return (
                             <TableRow
                                 key={row.id}
@@ -47,6 +52,18 @@ export default function RequestTable({ requests }) {
                                 <TableCell component="th" scope="row">
                                     <Typography variant="body2" fontWeight={500}>
                                         {row.title}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {row.columns && row.columns.length > 0
+                                            ? row.columns.join(", ")
+                                            : "-"}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" align="center" color="text.secondary">
+                                        {entryCount}
                                     </Typography>
                                 </TableCell>
                                 <TableCell>
@@ -88,7 +105,7 @@ export default function RequestTable({ requests }) {
                     })}
                     {requests.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                            <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                                 <Typography color="text.secondary">No requests found</Typography>
                             </TableCell>
                         </TableRow>
