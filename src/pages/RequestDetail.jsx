@@ -29,6 +29,7 @@ export default function RequestDetail() {
   const [department, setDepartment] = useState("");
   const [comment, setComment] = useState("");
   const [toastMessage, setToastMessage] = useState(location.state?.requestCreatedMessage || "");
+  const [toastSeverity, setToastSeverity] = useState("success");
   const [showToast, setShowToast] = useState(Boolean(location.state?.requestCreatedMessage));
   const [tableData, setTableData] = useState([]);
   const [responseFile, setResponseFile] = useState(null);
@@ -72,7 +73,9 @@ export default function RequestDetail() {
       await updateRequest(request.id, { columns: newColumns });
     } catch (error) {
       console.error("Failed to update columns:", error);
-      // Ideally show an error toast
+      setToastSeverity("error");
+      setToastMessage("Failed to update columns.");
+      setShowToast(true);
     }
   };
 
@@ -102,6 +105,7 @@ export default function RequestDetail() {
   // Handle toast message from navigation state - MUST be before early returns
   useEffect(() => {
     if (location.state?.requestCreatedMessage) {
+      setToastSeverity("success");
       setToastMessage(location.state.requestCreatedMessage);
       setShowToast(true);
     }
@@ -126,8 +130,17 @@ export default function RequestDetail() {
     );
   }
 
-  const handleQuickComplete = () => {
-    markCompleted(request.id);
+  const handleQuickComplete = async () => {
+    try {
+      await markCompleted(request.id);
+      setToastSeverity("success");
+      setToastMessage("Request marked as completed!");
+      setShowToast(true);
+    } catch (error) {
+      setToastSeverity("error");
+      setToastMessage("Failed to complete request.");
+      setShowToast(true);
+    }
   };
 
   const handleSaveData = async () => {
@@ -160,10 +173,12 @@ export default function RequestDetail() {
         submissions: newSubmissions
       });
 
+      setToastSeverity("success");
       setToastMessage("Changes saved successfully!");
       setShowToast(true);
     } catch (error) {
       console.error("Failed to save data:", error);
+      setToastSeverity("error");
       setToastMessage("Failed to save changes.");
       setShowToast(true);
     }
@@ -187,6 +202,7 @@ export default function RequestDetail() {
 
   const handleSubmitResponse = async () => {
     if (!department.trim()) {
+      setToastSeverity("warning");
       setToastMessage("Please enter your department name.");
       setShowToast(true);
       return;
@@ -203,10 +219,12 @@ export default function RequestDetail() {
 
       setDepartment("");
       setResponseFile(null);
+      setToastSeverity("success");
       setToastMessage("Response submitted successfully!");
       setShowToast(true);
     } catch (error) {
       console.error("Failed to submit response:", error);
+      setToastSeverity("error");
       setToastMessage("Failed to submit response.");
       setShowToast(true);
     } finally {
@@ -530,7 +548,7 @@ export default function RequestDetail() {
       >
         <Alert
           onClose={() => setShowToast(false)}
-          severity="success"
+          severity={toastSeverity}
           variant="filled"
           sx={{ width: "100%" }}
         >
