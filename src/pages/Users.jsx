@@ -29,6 +29,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function Users() {
     const [users, setUsers] = useState([]);
@@ -36,8 +37,10 @@ export default function Users() {
     const [openAddDialog, setOpenAddDialog] = useState(false);
     const [newUser, setNewUser] = useState({ name: '', username: '', password: '', role: 'viewer' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
 
-    const { isAdmin } = useAuth();
+    const { isAdmin, user: currentUser } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -77,6 +80,21 @@ export default function Users() {
             setNewUser({ name: '', username: '', password: '', role: 'viewer' });
         } catch (err) {
             setError(err.message || "Failed to create user");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        setIsSubmitting(true);
+        try {
+            await api.deleteUser(userToDelete.id);
+            setUsers(users.filter(u => u.id !== userToDelete.id));
+            setDeleteConfirmOpen(false);
+            setUserToDelete(null);
+        } catch (err) {
+            setError(err.message || "Failed to delete user");
         } finally {
             setIsSubmitting(false);
         }
@@ -123,6 +141,7 @@ export default function Users() {
                                     <TableCell sx={{ fontWeight: 600, color: "#475569" }}>User</TableCell>
                                     <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Username / ID</TableCell>
                                     <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Status / Role</TableCell>
+                                    <TableCell sx={{ fontWeight: 600, color: "#475569", textAlign: 'right' }}>Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -163,6 +182,20 @@ export default function Users() {
                                                 <MenuItem value="editor">Editor</MenuItem>
                                                 <MenuItem value="viewer">Viewer</MenuItem>
                                             </Select>
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                disabled={user.id === currentUser?.id}
+                                                onClick={() => {
+                                                    setUserToDelete(user);
+                                                    setDeleteConfirmOpen(true);
+                                                }}
+                                                title={user.id === currentUser?.id ? "You cannot delete yourself" : "Delete User"}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -232,6 +265,27 @@ export default function Users() {
                         </Button>
                     </DialogActions>
                 </form>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+                <DialogTitle>Confirm Delete</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to delete user <strong>{userToDelete?.name || userToDelete?.username}</strong>? This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setDeleteConfirmOpen(false)} color="inherit">Cancel</Button>
+                    <Button
+                        onClick={handleDeleteUser}
+                        color="error"
+                        variant="contained"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? "Deleting..." : "Delete User"}
+                    </Button>
+                </DialogActions>
             </Dialog>
         </Box>
     );

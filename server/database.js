@@ -111,6 +111,11 @@ export const dbOperations = {
     return rows[0];
   },
 
+  async deleteUser(id) {
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    return { success: true };
+  },
+
   // Get all requests
   async getAllRequests() {
     const { rows } = await pool.query('SELECT data FROM requests ORDER BY created_at DESC');
